@@ -1,3 +1,8 @@
+fuzz_targets:
+  - temene_fuzzer
+
+# Optional metadata
+project_name: temene-e-learning
 # ClusterFuzzLite project configuration for Temene / SeNest
 #
 # Reference: https://google.github.io/clusterfuzzlite/configuration/

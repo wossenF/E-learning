@@ -1,3 +1,20 @@
+#!/bin/bash
+set -eu
+
+# Build script for ClusterFuzzLite.
+# It must compile each harness in fuzz/ into $OUT.
+
+echo "Building temene_fuzzer..."
+
+# Use $CXX and $CXXFLAGS provided by the build environment, and link with $LIB_FUZZING_ENGINE.
+mkdir -p "$OUT"
+
+$CXX $CXXFLAGS -std=c++11 fuzz/temene_fuzzer.cc -o "$OUT/temene_fuzzer" $LIB_FUZZING_ENGINE || {
+  echo "Build failed" >&2
+  exit 1
+}
+
+echo "Built $OUT/temene_fuzzer"
 #!/bin/bash -eu
 # ClusterFuzzLite build script for Temene / SeNest
 #
