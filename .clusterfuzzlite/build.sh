@@ -1,40 +1,8 @@
-#!/bin/bash
-set -eu
-
-# Build script for ClusterFuzzLite.
-# It must compile each harness in fuzz/ into $OUT.
-
-echo "Building temene_fuzzer and cpp substrate..."
-
-mkdir -p "$OUT"
-
-# Compile cpp substrate sources
-SRC_FILES=""
-for f in cpp_src/*.cpp; do SRC_FILES="$SRC_FILES $f"; done
-
-echo "Compiling substrate: $SRC_FILES"
-$CXX $CXXFLAGS -std=c++11 -c $SRC_FILES || { echo "Substrate compile failed" >&2; exit 1; }
-
-# Link all objects with the fuzzer harness
-OBJ_FILES=""
-for o in *.o cpp_src/*.o; do OBJ_FILES="$OBJ_FILES $o"; done
-
-echo "Building fuzzer with objects: $OBJ_FILES"
-$CXX $CXXFLAGS fuzz/temene_fuzzer.cc $SRC_FILES -o "$OUT/temene_fuzzer" $LIB_FUZZING_ENGINE || { echo "Build failed" >&2; exit 1; }
-
-echo "Built $OUT/temene_fuzzer"
 #!/bin/bash -eu
 # ClusterFuzzLite build script for Temene / SeNest
 #
 # This script is executed inside the ClusterFuzzLite Docker container.
-# It compiles all Jazzer.js fuzzing harnesses and packages them as fuzz targets.
-#
-# Environment variables provided by ClusterFuzzLite:
-#   $SRC      — source root (where this repo lives)
-#   $OUT      — output directory for compiled fuzz targets
-#   $WORK     — scratch directory
-#
-# Reference: https://google.github.io/clusterfuzzlite/build-integration/
+# It packages all Jazzer.js fuzzing harnesses as fuzz targets.
 
 set -euo pipefail
 
@@ -45,25 +13,14 @@ CORPUS_DIR="$FUZZ_DIR/corpus"
 DICTS_DIR="$FUZZ_DIR/dicts"
 
 echo "[build.sh] Building Temene / SeNest fuzzing harnesses"
-echo "[build.sh] SRC=$SRC  OUT=$OUT  WORK=$WORK"
+echo "[build.sh] SRC=$SRC OUT=$OUT WORK=$WORK"
 
-# ---------------------------------------------------------------------------
-# Step 1: Compile TypeScript harnesses via ts-node / tsc
-# ---------------------------------------------------------------------------
+# Compile TypeScript harnesses if possible. Non-fatal because Jazzer.js can
+# run TypeScript harnesses directly in source mode.
 echo "[build.sh] Compiling TypeScript harnesses..."
 cd "$FUZZ_DIR"
 npm run --silent build 2>/dev/null || \
     npx tsc --project tsconfig.json --outDir "$WORK/harnesses-dist" || true
-# Note: Jazzer.js can run harnesses directly from TypeScript source via ts-node,
-# so a compilation failure here is non-fatal; we fall back to source-direct mode.
-
-# ---------------------------------------------------------------------------
-# Step 2: Package each harness as a named fuzz target
-# ---------------------------------------------------------------------------
-# Jazzer.js fuzz-target format:
-#   $OUT/<target_name>  — a shell script that runs Jazzer.js with the harness
-#   $OUT/<target_name>_seed_corpus.zip  — seed corpus for the target
-#   $OUT/<target_name>.dict             — mutation dictionary
 
 HARNESSES=(
     "01-jwt-verify"
@@ -81,10 +38,8 @@ for harness in "${HARNESSES[@]}"; do
 
     echo "[build.sh] Packaging harness: $target_name"
 
-    # --- Runner script ---
     cat > "$OUT/$target_name" <<RUNNER
 #!/bin/bash
-# Jazzer.js harness runner for $target_name
 exec node --experimental-vm-modules \
     "$REPO/fuzz/node_modules/.bin/jazzer" \
     "$harness_file" \
@@ -93,7 +48,6 @@ exec node --experimental-vm-modules \
 RUNNER
     chmod +x "$OUT/$target_name"
 
-    # --- Seed corpus zip ---
     corpus_subdir="$CORPUS_DIR/${harness}"
     if [ -d "$corpus_subdir" ]; then
         zip -j "$OUT/${target_name}_seed_corpus.zip" "$corpus_subdir"/* 2>/dev/null || true
@@ -102,8 +56,6 @@ RUNNER
         echo "[build.sh]   No seed corpus for $harness"
     fi
 
-    # --- Dictionary ---
-    # Map harness to its best-fit dictionary
     dict_file=""
     case "$harness" in
         "01-jwt-verify")      dict_file="$DICTS_DIR/jwt.dict" ;;
@@ -122,4 +74,4 @@ RUNNER
 done
 
 echo "[build.sh] Build complete. Targets in $OUT:"
-ls -la "$OUT"/temene_* 2>/dev/null || echo "  (no targets found — check for errors above)"
+ls -la "$OUT"/temene_* 2>/dev/null || echo "  (no targets found - check for errors above)"

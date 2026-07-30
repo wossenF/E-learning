@@ -9,5 +9,5 @@ Files:
 - `json_parser.cpp` — parser implementation
 - `api.h` / `impl1.cpp` / other helpers — auxiliary code used by the project
 
-Build: The repository's `.clusterfuzzlite/build.sh` compiles and links these sources into the
-`temene_fuzzer` binary for libFuzzer-based fuzzing.
+Build: These sources can be built locally via `CMakeLists.txt` in this folder or from the
+repository root. They are maintained as a native substrate library and examples.

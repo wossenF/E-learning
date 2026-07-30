@@ -1,18 +1,11 @@
-fuzz_targets:
-  - temene_fuzzer
-
-# Optional metadata
-project_name: temene-e-learning
 # ClusterFuzzLite project configuration for Temene / SeNest
-#
 # Reference: https://google.github.io/clusterfuzzlite/configuration/
 
 # Language of the fuzz targets.
 language: javascript
 
 # Sanitizers to enable.
-# Note: ASan/UBSan do not apply to pure JavaScript. Jazzer.js uses
-# V8's built-in memory safety and libFuzzer coverage instrumentation.
+# Jazzer.js harnesses are JavaScript targets; native sanitizers are not used.
 sanitizers:
   - none
 
