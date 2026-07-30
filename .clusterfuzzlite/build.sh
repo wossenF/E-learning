@@ -4,15 +4,23 @@ set -eu
 # Build script for ClusterFuzzLite.
 # It must compile each harness in fuzz/ into $OUT.
 
-echo "Building temene_fuzzer..."
+echo "Building temene_fuzzer and cpp substrate..."
 
-# Use $CXX and $CXXFLAGS provided by the build environment, and link with $LIB_FUZZING_ENGINE.
 mkdir -p "$OUT"
 
-$CXX $CXXFLAGS -std=c++11 fuzz/temene_fuzzer.cc -o "$OUT/temene_fuzzer" $LIB_FUZZING_ENGINE || {
-  echo "Build failed" >&2
-  exit 1
-}
+# Compile cpp substrate sources
+SRC_FILES=""
+for f in cpp_src/*.cpp; do SRC_FILES="$SRC_FILES $f"; done
+
+echo "Compiling substrate: $SRC_FILES"
+$CXX $CXXFLAGS -std=c++11 -c $SRC_FILES || { echo "Substrate compile failed" >&2; exit 1; }
+
+# Link all objects with the fuzzer harness
+OBJ_FILES=""
+for o in *.o cpp_src/*.o; do OBJ_FILES="$OBJ_FILES $o"; done
+
+echo "Building fuzzer with objects: $OBJ_FILES"
+$CXX $CXXFLAGS fuzz/temene_fuzzer.cc $SRC_FILES -o "$OUT/temene_fuzzer" $LIB_FUZZING_ENGINE || { echo "Build failed" >&2; exit 1; }
 
 echo "Built $OUT/temene_fuzzer"
 #!/bin/bash -eu
