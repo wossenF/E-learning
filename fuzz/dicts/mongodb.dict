@@ -1,0 +1,81 @@
+# MongoDB operator injection dictionary
+# Used for fuzzing the query-transform pipeline (harness 02)
+# and any MongoDB query-building code.
+
+# Comparison operators
+"$eq"
+"$ne"
+"$gt"
+"$gte"
+"$lt"
+"$lte"
+"$in"
+"$nin"
+
+# Logical operators
+"$and"
+"$or"
+"$not"
+"$nor"
+
+# Element operators
+"$exists"
+"$type"
+
+# Evaluation operators (high-risk — server-side execution)
+"$where"
+"$expr"
+"$jsonSchema"
+"$mod"
+"$regex"
+"$text"
+
+# Array operators
+"$all"
+"$elemMatch"
+"$size"
+
+# Projection/update operators (not query, but useful for boundary testing)
+"$set"
+"$unset"
+"$push"
+"$pull"
+"$addToSet"
+"$pop"
+"$inc"
+
+# URL-encoded operator prefixes
+"%24"
+"%24where"
+"%24gt"
+"%24ne"
+"%24regex"
+
+# Bracket-notation query string equivalents
+"[gt]"
+"[gte]"
+"[lt]"
+"[lte]"
+"[$where]"
+"[$ne]"
+"[$regex]"
+
+# Prototype pollution keys
+"__proto__"
+"constructor"
+"prototype"
+"__defineGetter__"
+"__defineSetter__"
+"__lookupGetter__"
+
+# Known NoSQL injection test strings
+"{\"$gt\":\"\"}"
+"{\"$ne\":null}"
+"{\"$regex\":\".*\"}"
+"{\"$where\":\"this.password.length>0\"}"
+
+# ReDoS patterns for $regex
+"^(a+)+$"
+"^([a-zA-Z]+)*$"
+"(.*a){20}"
+"^(a|a?)+$"

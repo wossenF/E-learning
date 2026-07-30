@@ -1,0 +1,3 @@
+{"first_name":"Alice","last_name":"Smith","email":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.c","password":"x"}
+{"first_name":"Alice","last_name":"Smith","email":"\"quoted local\"@example.com","password":"x"}
+{"first_name":"Alice","last_name":"Smith","email":"user+tag@subdomain.example.co.uk","password":"x"}

@@ -1,0 +1,6 @@
+../../../etc/passwd
+..%2F..%2F..%2Fetc%2Fshadow
+....//....//etc/passwd
+photo.jpg/../../../etc/passwd
+\x00.jpg
+photo.html\x00.jpg

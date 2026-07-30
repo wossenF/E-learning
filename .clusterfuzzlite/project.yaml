@@ -1,0 +1,23 @@
+# ClusterFuzzLite project configuration for Temene / SeNest
+#
+# Reference: https://google.github.io/clusterfuzzlite/configuration/
+
+# Language of the fuzz targets.
+language: javascript
+
+# Sanitizers to enable.
+# Note: ASan/UBSan do not apply to pure JavaScript. Jazzer.js uses
+# V8's built-in memory safety and libFuzzer coverage instrumentation.
+sanitizers:
+  - none
+
+# Architectures to build for.
+architectures:
+  - x86_64
+
+# Primary contact for this fuzzing project.
+primary_contact: security@temene.example.com
+
+# Auto-close issues after this many days of no repro.
+auto_ccs:
+  - security@temene.example.com

@@ -1,0 +1,86 @@
+# Filename/path fuzzing dictionary
+# Used for fuzzing the Multer file-upload filename callback (harness 03).
+
+# Dangerous extensions
+".html"
+".htm"
+".xhtml"
+".js"
+".mjs"
+".cjs"
+".ts"
+".jsx"
+".tsx"
+".svg"
+".xml"
+".php"
+".php3"
+".php4"
+".php5"
+".phtml"
+".asp"
+".aspx"
+".jsp"
+".jspx"
+".sh"
+".bash"
+".zsh"
+".py"
+".rb"
+".pl"
+".exe"
+".dll"
+".so"
+".dylib"
+".htaccess"
+".htpasswd"
+
+# Safe extensions
+".jpg"
+".jpeg"
+".png"
+".gif"
+".webp"
+
+# Path traversal sequences
+"../"
+"..\"
+".."
+".../"
+"..../"
+"../../../"
+"%2e%2e%2f"
+"%2e%2e/"
+"..%2f"
+"%2e%2e%5c"
+"..%5c"
+"%252e%252e%252f"
+
+# Null byte injection
+"\x00"
+"\u0000"
+"%00"
+
+# Double extension tricks
+".jpg.php"
+".png.html"
+".gif.js"
+".webp.html"
+
+# Homoglyph/unicode extensions
+".ℍtml"
+".рhp"
+".ⓙs"
+
+# NTFS alternate data streams (Windows)
+".jpg:php"
+".png::$DATA"
+
+# Extremely long names
+"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg"
+
+# Special characters in names
+"evil; rm -rf /.jpg"
+"evil$(id).jpg"
+"evil`id`.jpg"
+"evil|id.jpg"

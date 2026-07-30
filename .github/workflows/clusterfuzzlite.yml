@@ -1,0 +1,153 @@
+name: ClusterFuzzLite
+
+# Trigger: continuous fuzzing on push to main, plus batch fuzzing on every PR.
+# Reference: https://google.github.io/clusterfuzzlite/running-clusterfuzzlite/
+
+on:
+  # Run a short batch after every push to main.
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'SeNest/src/**'
+      - 'fuzz/**'
+      - '.clusterfuzzlite/**'
+
+  # Run a short batch on every PR (smoke-test for new crash paths).
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'SeNest/src/**'
+      - 'fuzz/**'
+      - '.clusterfuzzlite/**'
+
+  # Weekly full-batch run: 30 minutes per harness.
+  schedule:
+    - cron: '0 2 * * 0'   # Sunday 02:00 UTC
+
+  # Allow manual trigger with configurable time budget.
+  workflow_dispatch:
+    inputs:
+      fuzz-seconds:
+        description: 'Fuzzing budget per harness (seconds)'
+        required: false
+        default: '300'
+
+permissions:
+  contents: read
+  security-events: write   # Required to upload SARIF reports
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Build: compile the harnesses inside the ClusterFuzzLite Docker image.
+  # ---------------------------------------------------------------------------
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build fuzz targets
+        uses: google/clusterfuzzlite@v1
+        with:
+          command: build
+          sanitizer: none   # JavaScript targets don't use C sanitizers
+          language: javascript
+
+  # ---------------------------------------------------------------------------
+  # Fuzz: run each harness with a time budget.
+  # ---------------------------------------------------------------------------
+  fuzz:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - temene_01_jwt_verify
+          - temene_02_query_transform
+          - temene_03_file_extension
+          - temene_04_dto_validation
+          - temene_05_objectid_parse
+          - temene_06_bcrypt_hashpwd
+          # harness 07 (login-logic) is slower; only run on schedule/manual
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fuzz — ${{ matrix.target }}
+        uses: google/clusterfuzzlite@v1
+        with:
+          command: run
+          sanitizer: none
+          language: javascript
+          fuzz-target: ${{ matrix.target }}
+          fuzz-seconds: ${{ github.event.inputs.fuzz-seconds || (github.event_name == 'schedule' && '1800' || '120') }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------------------------------
+  # Fuzz: login-logic (slower, only on schedule / manual).
+  # ---------------------------------------------------------------------------
+  fuzz-login-logic:
+    needs: build
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fuzz — temene_07_login_logic
+        uses: google/clusterfuzzlite@v1
+        with:
+          command: run
+          sanitizer: none
+          language: javascript
+          fuzz-target: temene_07_login_logic
+          fuzz-seconds: ${{ github.event.inputs.fuzz-seconds || '1800' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------------------------------
+  # Prune: minimize the corpus weekly.
+  # ---------------------------------------------------------------------------
+  prune:
+    needs: fuzz
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prune corpus
+        uses: google/clusterfuzzlite@v1
+        with:
+          command: prune
+          sanitizer: none
+          language: javascript
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------------------------------------------------------------------
+  # Coverage: generate and upload an HTML coverage report.
+  # ---------------------------------------------------------------------------
+  coverage:
+    needs: fuzz
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate coverage report
+        uses: google/clusterfuzzlite@v1
+        with:
+          command: coverage
+          sanitizer: none
+          language: javascript
+          fuzz-target: temene_02_query_transform   # highest-impact harness
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fuzzing-coverage-report
+          path: coverage/report/
+          retention-days: 30

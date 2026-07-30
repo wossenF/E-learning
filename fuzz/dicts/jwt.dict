@@ -1,0 +1,58 @@
+# JWT fuzzing dictionary
+# Covers structural tokens, algorithm names, and claim names
+# used by jsonwebtoken and passport-jwt.
+
+# Structural delimiters
+"."
+"eyJ"
+"Bearer "
+
+# Algorithm names (header alg field)
+"\"alg\":\"HS256\""
+"\"alg\":\"HS384\""
+"\"alg\":\"HS512\""
+"\"alg\":\"RS256\""
+"\"alg\":\"RS384\""
+"\"alg\":\"RS512\""
+"\"alg\":\"ES256\""
+"\"alg\":\"ES384\""
+"\"alg\":\"ES512\""
+"\"alg\":\"PS256\""
+"\"alg\":\"none\""
+"\"alg\":\"None\""
+"\"alg\":\"NONE\""
+"\"alg\":\"nOnE\""
+
+# Header fields
+"\"typ\":\"JWT\""
+"\"typ\":\"JWE\""
+"\"kid\":\""
+"\"x5u\":\""
+"\"jku\":\""
+
+# Standard claim names
+"\"iss\":\""
+"\"sub\":\""
+"\"aud\":\""
+"\"exp\":"
+"\"nbf\":"
+"\"iat\":"
+"\"jti\":\""
+"\"email\":\""
+"\"id\":\""
+
+# Known-problematic values
+"0"
+"-1"
+"null"
+"true"
+"false"
+"9999999999"
+"-9999999999"
+"\u0000"
+
+# App-specific claim values
+"\"email\":\"admin@example.com\""
+"\"email\":\"root@example.com\""
+"\"id\":\"000000000000000000000001\""
+"\"role\":\"admin\""

@@ -1,0 +1,90 @@
+# General fuzzing dictionary
+# Used across multiple harnesses for common injection patterns.
+
+# Null and control bytes
+"\x00"
+"\x01"
+"\x0a"
+"\x0d"
+"\xff"
+"\u0000"
+"\uffff"
+"\ufffe"
+"\ufeff"
+
+# Oversized inputs
+"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+# Empty/whitespace
+""
+" "
+"  "
+"\t"
+"\n"
+"\r\n"
+
+# Type confusion
+"null"
+"undefined"
+"NaN"
+"Infinity"
+"-Infinity"
+"true"
+"false"
+"0"
+"-1"
+"1e309"
+"[]"
+"{}"
+
+# SQL injection (for cross-testing)
+"'"
+"\""
+"' OR '1'='1"
+"' OR 1=1--"
+"'; DROP TABLE users;--"
+
+# XSS payloads
+"<script>alert(1)</script>"
+"javascript:alert(1)"
+"\"><img src=x onerror=alert(1)>"
+"<svg onload=alert(1)>"
+
+# Unicode special characters
+"\u202e"
+"\u200b"
+"\u200c"
+"\u200d"
+"\u2028"
+"\u2029"
+"\u0085"
+
+# Format string injection
+"%s"
+"%d"
+"%n"
+"%x"
+"${7*7}"
+"#{7*7}"
+"{{7*7}}"
+
+# Long repeating patterns (for ReDoS)
+"aaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+# Prototype pollution
+"__proto__"
+"constructor"
+"prototype"
+"__defineGetter__"
+"hasOwnProperty"
+"toString"
+"valueOf"
+
+# Email boundary values
+"@"
+"a@b"
+"@example.com"
+"user@"
+"user@@example.com"
+"user@example..com"

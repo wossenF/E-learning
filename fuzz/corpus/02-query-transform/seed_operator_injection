@@ -1,0 +1,1 @@
+{"$where":"this.title.length>0","price":{"$ne":0}}
