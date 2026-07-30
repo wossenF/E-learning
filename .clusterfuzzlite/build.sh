@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-REPO="$SRC/temene"
+REPO="$SRC"
 FUZZ_DIR="$REPO/fuzz"
 HARNESSES_DIR="$FUZZ_DIR/harnesses"
 CORPUS_DIR="$FUZZ_DIR/corpus"
