@@ -1,17 +1,51 @@
-#pragma once
+#ifndef JSON_PARSER_H
+#define JSON_PARSER_H
+
 #include <string>
-#include <cstddef>
-#include <cstdint>
-#include <variant>
 #include <vector>
-#include <map>
+#include <unordered_map>
+#include <memory>
+#include <stdexcept>
 
-// A tiny, permissive JSON-like parser for fuzzing exercises.
-// Not fully compliant — intentionally simple to provide interesting parsing logic.
+namespace temene {
 
-using JsonValue = std::variant<std::nullptr_t, bool, double, std::string, std::vector<std::variant<std::nullptr_t, bool, double, std::string>>, std::map<std::string, std::string>>;
+enum class JsonValueType {
+  NULL_VAL,
+  BOOLEAN,
+  NUMBER,
+  STRING,
+  ARRAY,
+  OBJECT
+};
 
-// Parse input bytes; returns true on success, false on parse error.
-// The parsed result is not used, but the parser exercises string handling,
-// numeric parsing, and nested structures — useful for fuzzing memory issues.
-bool parse_json_like(const uint8_t* data, size_t size);
+class JsonValue {
+public:
+  JsonValueType type{JsonValueType::NULL_VAL};
+  bool boolVal{false};
+  double numVal{0.0};
+  std::string strVal;
+  std::vector<std::shared_ptr<JsonValue>> arrayVal;
+  std::unordered_map<std::string, std::shared_ptr<JsonValue>> objectVal;
+
+  std::string serialize() const;
+};
+
+class JsonParserEngine {
+public:
+  std::shared_ptr<JsonValue> parse(const std::string& jsonString);
+
+private:
+  size_t pos_{0};
+  std::string data_;
+
+  void skipWhitespace();
+  std::shared_ptr<JsonValue> parseValue();
+  std::shared_ptr<JsonValue> parseObject();
+  std::shared_ptr<JsonValue> parseArray();
+  std::string parseString();
+  double parseNumber();
+};
+
+} // namespace temene
+
+#endif // JSON_PARSER_H

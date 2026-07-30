@@ -1,100 +1,181 @@
 #include "json_parser.h"
-#include <string>
 #include <cctype>
-#include <cstdlib>
 #include <sstream>
 
-static const char* skip_ws(const char* p, const char* end) {
-    while (p < end && std::isspace((unsigned char)*p)) ++p;
-    return p;
-}
+namespace temene {
 
-bool parse_string(const char*& p, const char* end, std::string& out) {
-    if (p==end || *p != '"') return false;
-    ++p; // skip '"'
-    while (p < end) {
-        char c = *p++;
-        if (c == '\\') {
-            if (p==end) return false;
-            char esc = *p++;
-            switch (esc) {
-                case 'n': out.push_back('\n'); break;
-                case 't': out.push_back('\t'); break;
-                case 'r': out.push_back('\r'); break;
-                case '\\': out.push_back('\\'); break;
-                case '"': out.push_back('"'); break;
-                default: out.push_back(esc); break;
-            }
-        } else if (c == '"') {
-            return true;
-        } else {
-            out.push_back(c);
-        }
+std::string JsonValue::serialize() const {
+  if (type == JsonValueType::NULL_VAL) return "null";
+  if (type == JsonValueType::BOOLEAN) return boolVal ? "true" : "false";
+  if (type == JsonValueType::NUMBER) {
+    std::ostringstream ss;
+    ss << numVal;
+    return ss.str();
+  }
+  if (type == JsonValueType::STRING) {
+    return "\"" + strVal + "\""; // simplistic escaping
+  }
+  if (type == JsonValueType::ARRAY) {
+    std::string res = "[";
+    for (size_t i = 0; i < arrayVal.size(); ++i) {
+      res += arrayVal[i]->serialize();
+      if (i + 1 < arrayVal.size()) res += ",";
     }
-    return false;
-}
-
-bool parse_number(const char*& p, const char* end, double& out) {
-    const char* start = p;
-    while (p < end && (std::isdigit((unsigned char)*p) || *p=='-' || *p=='+' || *p=='.' || *p=='e' || *p=='E')) ++p;
-    if (p==start) return false;
-    try {
-        out = std::strtod(start, nullptr);
-    } catch (...) { return false; }
-    return true;
-}
-
-bool parse_array(const char*& p, const char* end) {
-    if (p==end || *p!='[') return false;
-    ++p;
-    p = skip_ws(p, end);
-    while (p < end && *p != ']') {
-        // try to parse a string or number or nested array (shallow)
-        if (*p == '"') { std::string s; if (!parse_string(p, end, s)) return false; }
-        else if (*p == '[') { if (!parse_array(p, end)) return false; }
-        else { double num; if (!parse_number(p, end, num)) return false; }
-        p = skip_ws(p, end);
-        if (*p == ',') { ++p; p = skip_ws(p, end); continue; }
-        break;
+    res += "]";
+    return res;
+  }
+  if (type == JsonValueType::OBJECT) {
+    std::string res = "{";
+    bool first = true;
+    for (const auto& [k, v] : objectVal) {
+      if (!first) res += ",";
+      res += "\"" + k + "\":" + v->serialize();
+      first = false;
     }
-    if (p==end || *p != ']') return false;
-    ++p;
-    return true;
+    res += "}";
+    return res;
+  }
+  return "";
 }
 
-bool parse_object(const char*& p, const char* end) {
-    if (p==end || *p!='{') return false;
-    ++p;
-    p = skip_ws(p, end);
-    while (p < end && *p != '}') {
-        std::string key;
-        if (!parse_string(p, end, key)) return false;
-        p = skip_ws(p, end);
-        if (p==end || *p!=':') return false;
-        ++p; p = skip_ws(p, end);
-        if (*p == '"') { std::string v; if (!parse_string(p, end, v)) return false; }
-        else if (*p == '{') { if (!parse_object(p, end)) return false; }
-        else if (*p == '[') { if (!parse_array(p, end)) return false; }
-        else { double num; if (!parse_number(p, end, num)) return false; }
-        p = skip_ws(p, end);
-        if (*p == ',') { ++p; p = skip_ws(p, end); continue; }
-        break;
+void JsonParserEngine::skipWhitespace() {
+  while (pos_ < data_.size() && std::isspace(data_[pos_])) {
+    pos_++;
+  }
+}
+
+std::shared_ptr<JsonValue> JsonParserEngine::parse(const std::string& jsonString) {
+  data_ = jsonString;
+  pos_ = 0;
+  return parseValue();
+}
+
+std::shared_ptr<JsonValue> JsonParserEngine::parseValue() {
+  skipWhitespace();
+  if (pos_ >= data_.size()) return nullptr;
+
+  char c = data_[pos_];
+  if (c == '{') return parseObject();
+  if (c == '[') return parseArray();
+  if (c == '"') {
+    auto val = std::make_shared<JsonValue>();
+    val->type = JsonValueType::STRING;
+    val->strVal = parseString();
+    return val;
+  }
+  if (c == 't' || c == 'f') {
+    auto val = std::make_shared<JsonValue>();
+    val->type = JsonValueType::BOOLEAN;
+    if (data_.compare(pos_, 4, "true") == 0) {
+      val->boolVal = true;
+      pos_ += 4;
+    } else if (data_.compare(pos_, 5, "false") == 0) {
+      val->boolVal = false;
+      pos_ += 5;
     }
-    if (p==end || *p != '}') return false;
-    ++p;
-    return true;
+    return val;
+  }
+  if (c == 'n') {
+    auto val = std::make_shared<JsonValue>();
+    val->type = JsonValueType::NULL_VAL;
+    if (data_.compare(pos_, 4, "null") == 0) {
+      pos_ += 4;
+    }
+    return val;
+  }
+  
+  if (c == '-' || std::isdigit(c)) {
+    auto val = std::make_shared<JsonValue>();
+    val->type = JsonValueType::NUMBER;
+    val->numVal = parseNumber();
+    return val;
+  }
+  
+  return nullptr;
 }
 
-bool parse_json_like(const uint8_t* data, size_t size) {
-    if (!data || size == 0) return false;
-    const char* p = reinterpret_cast<const char*>(data);
-    const char* end = p + size;
-    p = skip_ws(p, end);
-    if (p==end) return false;
-    bool ok = false;
-    if (*p == '{') ok = parse_object(p, end);
-    else if (*p == '[') ok = parse_array(p, end);
-    else if (*p == '"') { std::string s; ok = parse_string(p, end, s); }
-    else { double n; ok = parse_number(p, end, n); }
-    return ok;
+std::string JsonParserEngine::parseString() {
+  pos_++; // skip quote
+  std::string result;
+  while (pos_ < data_.size() && data_[pos_] != '"') {
+    result += data_[pos_++];
+  }
+  if (pos_ < data_.size() && data_[pos_] == '"') pos_++; // skip quote
+  return result;
 }
+
+double JsonParserEngine::parseNumber() {
+  size_t start = pos_;
+  while (pos_ < data_.size() && (std::isdigit(data_[pos_]) || data_[pos_] == '-' || data_[pos_] == '.' || data_[pos_] == 'e' || data_[pos_] == 'E' || data_[pos_] == '+')) {
+    pos_++;
+  }
+  std::string numStr = data_.substr(start, pos_ - start);
+  return std::stod(numStr);
+}
+
+std::shared_ptr<JsonValue> JsonParserEngine::parseObject() {
+  auto obj = std::make_shared<JsonValue>();
+  obj->type = JsonValueType::OBJECT;
+  
+  pos_++; // skip '{'
+  skipWhitespace();
+  
+  if (pos_ < data_.size() && data_[pos_] == '}') {
+    pos_++;
+    return obj;
+  }
+  
+  while (pos_ < data_.size()) {
+    skipWhitespace();
+    if (data_[pos_] != '"') throw std::runtime_error("Expected string key in object");
+    
+    std::string key = parseString();
+    skipWhitespace();
+    
+    if (pos_ >= data_.size() || data_[pos_] != ':') throw std::runtime_error("Expected ':' in object");
+    pos_++; // skip ':'
+    
+    auto val = parseValue();
+    if (val) obj->objectVal[key] = val;
+    
+    skipWhitespace();
+    if (pos_ >= data_.size() || data_[pos_] == '}') {
+      if (pos_ < data_.size()) pos_++; // skip '}'
+      break;
+    }
+    if (data_[pos_] != ',') throw std::runtime_error("Expected ',' or '}' in object");
+    pos_++; // skip ','
+  }
+  
+  return obj;
+}
+
+std::shared_ptr<JsonValue> JsonParserEngine::parseArray() {
+  auto arr = std::make_shared<JsonValue>();
+  arr->type = JsonValueType::ARRAY;
+  
+  pos_++; // skip '['
+  skipWhitespace();
+  
+  if (pos_ < data_.size() && data_[pos_] == ']') {
+    pos_++;
+    return arr;
+  }
+  
+  while (pos_ < data_.size()) {
+    auto val = parseValue();
+    if (val) arr->arrayVal.push_back(val);
+    
+    skipWhitespace();
+    if (pos_ >= data_.size() || data_[pos_] == ']') {
+      if (pos_ < data_.size()) pos_++; // skip ']'
+      break;
+    }
+    if (data_[pos_] != ',') throw std::runtime_error("Expected ',' or ']' in array");
+    pos_++; // skip ','
+  }
+  
+  return arr;
+}
+
+} // namespace temene
