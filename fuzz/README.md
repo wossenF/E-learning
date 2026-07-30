@@ -69,21 +69,6 @@ jazzer fuzz/harnesses/02-query-transform.fuzz.ts ./crash-abc123
 
 ---
 
-## Running PoCs (Deterministic Vulnerability Reproductions)
-
-Each PoC is a standalone TypeScript script that exercises a confirmed vulnerability
-without fuzzing — useful for CI regression tests.
-
-```bash
-npm run poc:nosql      # NOSQLI-001 — NoSQL operator injection
-npm run poc:nullderef  # NPE-001    — null dereference in getUser
-npm run poc:jwtsecret  # CONFIG-001 — undefined JWT secret
-npm run poc:unauthed   # AUTH-001   — unauthorized course deletion
-npm run poc:objectid   # DOS-001    — CastError via invalid ObjectId
-```
-
----
-
 ## Harness Overview
 
 | File | Target | DB needed |

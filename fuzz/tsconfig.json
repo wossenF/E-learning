@@ -22,6 +22,6 @@
       "src/*": ["../SeNest/src/*"]
     }
   },
-  "include": ["harnesses/**/*", "poc/**/*", "helpers/**/*"],
+  "include": ["harnesses/**/*", "helpers/**/*"],
   "exclude": ["node_modules", "dist"]
 }

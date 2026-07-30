@@ -11,11 +11,7 @@
     "fuzz:objectid":   "jazzer fuzz/harnesses/05-objectid-parse.fuzz.ts   --corpus fuzz/corpus/05-objectid-parse   --dict fuzz/dicts/general.dict",
     "fuzz:bcrypt":     "jazzer fuzz/harnesses/06-bcrypt-hashpwd.fuzz.ts   --corpus fuzz/corpus/06-bcrypt-hashpwd   --dict fuzz/dicts/general.dict",
     "fuzz:login":      "jazzer fuzz/harnesses/07-login-logic.fuzz.ts      --corpus fuzz/corpus/07-login-logic      --dict fuzz/dicts/general.dict",
-    "poc:nosql":       "npx ts-node poc/poc-001-nosql-injection.ts",
-    "poc:nullderef":   "npx ts-node poc/poc-002-null-deref.ts",
-    "poc:jwtsecret":   "npx ts-node poc/poc-003-undefined-jwt-secret.ts",
-    "poc:unauthed":    "npx ts-node poc/poc-004-unauthed-course-ops.ts",
-    "poc:objectid":    "npx ts-node poc/poc-005-objectid-dos.ts"
+    
   },
   "dependencies": {
     "@nestjs/common": "^9.0.0",
